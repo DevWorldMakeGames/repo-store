@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>repo-store</title>
+<style>
+:root {
+  --bg: #ffffff; --ink: #202124; --muted: #5f6368; --line: #dadce0; --soft: #f1f3f4;
+  --accent: #d32f2f; --accent-ink: #ffffff; --tint: #fdecea;
+  --font: "Google Sans", "Product Sans", Roboto, "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131314; --ink: #e3e3e3; --muted: #a8aaad; --line: #3c4043; --soft: #28292a;
+    --accent: #ff6b6b; --accent-ink: #3a0a0a; --tint: #3d1d1f;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); scroll-behavior: auto; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--font); padding-bottom: env(safe-area-inset-bottom, 0px); }
+a { color: inherit; text-decoration: none; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+.muted { color: var(--muted); }
+
+/* Top bar */
+.top { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+.bar { display: flex; align-items: center; gap: 28px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 500; letter-spacing: -0.01em; color: var(--muted); }
+.brand svg { width: 30px; height: 30px; flex: none; }
+.tabs { display: flex; gap: 4px; height: 100%; }
+.tab { border: 0; background: none; padding: 0 16px; height: 100%; font-size: 14px; font-weight: 500; color: var(--muted); border-bottom: 3px solid transparent; }
+.tab:hover { color: var(--ink); }
+.tab[aria-pressed="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.search { margin-left: auto; position: relative; width: min(380px, 40vw); }
+.search input { width: 100%; height: 42px; border: 0; border-radius: 24px; background: var(--soft); padding: 0 16px 0 44px; font-size: 15px; }
+.search input:focus { outline: 2px solid var(--accent); background: var(--bg); }
+.search svg { position: absolute; left: 14px; top: 11px; width: 20px; height: 20px; fill: var(--muted); }
+
+/* Chips */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 16px 0 4px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 1px solid var(--line); background: none; border-radius: 8px; padding: 6px 14px; font-size: 14px; font-weight: 500; }
+.chip:hover { background: var(--soft); }
+.chip[aria-pressed="true"] { background: var(--tint); border-color: transparent; color: var(--accent); }
+
+/* Icons and ratings */
+.icon { display: grid; place-items: center; width: 100px; height: 100px; border-radius: 22%; background: var(--accent); color: var(--accent-ink); font-size: 40px; font-weight: 500; overflow: hidden; flex: none; }
+.icon img { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--bg); }
+.icon.sm { width: 56px; height: 56px; font-size: 22px; border-radius: 14px; }
+.icon.xl { width: 128px; height: 128px; font-size: 52px; }
+.age { display: inline-block; margin-top: 3px; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--muted); font-size: 11px; line-height: 17px; white-space: nowrap; }
+
+/* Shelves */
+.shelf { margin: 28px 0 8px; }
+.shelf h2, .sec h2 { margin: 0 0 14px; font-size: 20px; font-weight: 500; letter-spacing: -0.005em; }
+.car { position: relative; }
+.track { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x proximity; padding: 4px 2px 12px; scrollbar-width: none; }
+.track::-webkit-scrollbar { display: none; }
+.card { flex: none; width: 112px; scroll-snap-align: start; display: block; border-radius: 12px; }
+.card .icon { margin-bottom: 8px; }
+.card:hover .icon { box-shadow: 0 1px 6px rgba(0,0,0,.28); }
+.cname { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; font-weight: 500; line-height: 1.3; }
+.cmeta { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav { position: absolute; top: 30px; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); box-shadow: 0 1px 4px rgba(0,0,0,.25); font-size: 22px; line-height: 1; display: none; }
+.car:hover .nav { display: block; }
+.nav.prev { left: -18px; } .nav.next { right: -18px; }
+@media (hover: none) { .car:hover .nav { display: none; } }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 24px 20px; margin: 24px 0 40px; }
+.grid .card { width: auto; }
+.page-title { margin: 28px 0 0; font-size: 20px; font-weight: 500; }
+.empty { padding: 60px 0; text-align: center; color: var(--muted); }
+.empty .btn { margin-top: 12px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; padding: 0 24px; height: 40px; background: var(--accent); color: var(--accent-ink); font-size: 14px; font-weight: 500; }
+.btn:hover { filter: brightness(1.08); }
+.btn.out { background: none; color: var(--accent); border: 1px solid var(--line); height: 32px; padding: 0 14px; font-weight: 500; }
+.btn.out:hover { background: var(--tint); filter: none; }
+
+/* Detail page */
+.detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; padding: 32px 0 56px; }
+@media (min-width: 980px) { .detail.has-aside { grid-template-columns: minmax(0, 1fr) 320px; } }
+.head { display: flex; gap: 28px; align-items: flex-start; }
+.head h1 { margin: 4px 0 6px; font-size: 32px; line-height: 1.2; font-weight: 500; letter-spacing: -0.01em; }
+.dev { color: var(--accent); font-weight: 500; font-size: 14px; display: block; }
+.cat { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.stats { display: flex; margin: 28px 0 20px; }
+.stat { padding: 0 24px; text-align: center; min-width: 0; }
+.stat:first-child { padding-left: 0; text-align: left; }
+.stat + .stat { border-left: 1px solid var(--line); }
+.stat b { display: block; font-size: 15px; font-weight: 500; white-space: nowrap; }
+.stat span { font-size: 12px; color: var(--muted); }
+.actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.actions .btn { min-width: 160px; height: 44px; }
+.shots { display: flex; gap: 12px; overflow-x: auto; margin: 28px 0 8px; padding-bottom: 10px; }
+.shots img { height: 320px; width: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--soft); flex: none; }
+.sec { margin-top: 36px; }
+.prose p, .prose ul { margin: 0 0 12px; max-width: 72ch; font-size: 14px; line-height: 1.6; }
+.prose h4 { margin: 18px 0 6px; font-size: 15px; font-weight: 500; }
+.prose code, .hash { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; background: var(--soft); padding: 1px 6px; border-radius: 4px; }
+.prose a { color: var(--accent); }
+.lead { font-size: 15px; margin: 0 0 14px; }
+.dls { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; }
+.dls li { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 14px 16px; }
+.dls li + li { border-top: 1px solid var(--line); }
+.dls strong { font-weight: 500; font-size: 15px; }
+.facts { display: flex; flex-wrap: wrap; gap: 2px 14px; color: var(--muted); font-size: 12.5px; align-items: center; margin-top: 2px; }
+.info { display: grid; grid-template-columns: 160px 1fr; gap: 10px 16px; margin: 0; }
+.info dt { color: var(--muted); } .info dd { margin: 0; }
+.info a { color: var(--accent); }
+.aside h2 { margin: 0 0 12px; font-size: 20px; font-weight: 500; }
+.mini { display: flex; gap: 14px; align-items: center; padding: 10px 0; }
+.mini .t { min-width: 0; }
+.mini .cname { -webkit-line-clamp: 1; font-size: 14px; }
+
+.pub { height: 38px; padding: 0 18px; flex: none; }
+.form { max-width: 760px; padding: 28px 0 64px; }
+.form h1 { margin: 0 0 4px; font-size: 28px; font-weight: 500; }
+.form fieldset { border: 1px solid var(--line); border-radius: 12px; margin: 22px 0 0; padding: 6px 18px 16px; }
+.form legend { padding: 0 8px; font-size: 15px; font-weight: 500; color: var(--accent); }
+.field { display: block; margin-top: 12px; }
+.field > span { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.field > span i { color: var(--accent); font-style: normal; }
+.field input:not([type=file]), .field select, .field textarea { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 9px 12px; font-size: 14px; }
+.field textarea { min-height: 120px; resize: vertical; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.hint { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.dlrow { border: 1px dashed var(--line); border-radius: 10px; padding: 4px 14px 14px; margin-top: 12px; }
+.dlrow .top2 { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-weight: 500; font-size: 13px; }
+.msg { margin-top: 16px; padding: 12px 14px; border-radius: 8px; background: var(--tint); font-size: 14px; }
+.msg.err { border: 1px solid var(--accent); }
+.hp { position: absolute; left: -9999px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } .pub { order: 1; margin-left: auto; } .brand { margin-right: auto; } }
+
+@media (max-width: 720px) {
+  .wrap { padding: 0 16px; }
+  .bar { flex-wrap: wrap; height: auto; gap: 0 12px; padding-top: 10px; }
+  .search { order: 3; width: 100%; margin: 8px 0 10px; }
+  .tabs { order: 2; width: 100%; height: 44px; }
+  .brand { font-size: 20px; }
+  .head { gap: 16px; } .head h1 { font-size: 24px; }
+  .icon.xl { width: 88px; height: 88px; font-size: 36px; }
+  .stat { padding: 0 14px; }
+  .actions .btn { width: 100%; }
+  .shots img { height: 240px; }
+  .info { grid-template-columns: 110px 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="#" id="home" aria-label="Home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#d32f2f"/><path d="M16 6.5l8.5 4.2v10.6L16 25.5l-8.5-4.2V10.7zM7.8 10.9L16 15l8.2-4.1M16 15v10.2" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+      <span id="title">repo-store</span>
+    </a>
+    <div class="tabs" role="group" aria-label="Platform">
+      <button type="button" class="tab" data-platform="all">All apps</button>
+      <button type="button" class="tab" data-platform="android">Android</button>
+      <button type="button" class="tab" data-platform="windows">Windows</button>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>
+      <input id="q" type="search" placeholder="Search apps" aria-label="Search apps" autocomplete="off">
+    </div>
+    <a class="btn pub" href="#publish">Publish an app</a>
+  </div>
+</header>
+<main class="wrap" id="view"></main>
+
+<script>
+(function () {
+  'use strict';
+  var PLATFORM = { android: 'Android', windows: 'Windows' };
+  var ua = navigator.userAgent;
+  var detected = /android/i.test(ua) ? 'android' : /windows/i.test(ua) ? 'windows' : 'all';
+  var state = { apps: [], q: '', platform: detected, category: 'all' };
+  var view = document.getElementById('view');
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function safeUrl(u) { return /^https:\/\//i.test(u || '') ? u : '#'; }
+  function fmtSize(b) { if (!b) return ''; if (typeof b === 'string') return esc(b); var mb = b / 1048576; return mb >= 1 ? mb.toFixed(mb >= 10 ? 0 : 1) + ' MB' : Math.round(b / 1024) + ' KB'; }
+  function fmtDate(d) { if (!d) return ''; var t = new Date(d + 'T00:00:00'); return isNaN(t) ? d : t.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+  function fmtCount(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'K' : String(n); }
+  function find(id) { return state.apps.filter(function (a) { return a.id === id; })[0]; }
+  function currentId() { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ''; } }
+
+  /* Small, safe Markdown: headings, lists, bold, italic, code, https links. */
+  function md(src) {
+    var html = '', list = false, para = [];
+    function inline(t) {
+      return t.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    }
+    function flush() { if (para.length) { html += '<p>' + inline(para.join(' ')) + '</p>'; para = []; } }
+    function close() { if (list) { html += '</ul>'; list = false; } }
+    esc(src).split(/\r?\n/).forEach(function (raw) {
+      var l = raw.trim(), m;
+      if (!l) { flush(); close(); return; }
+      if ((m = l.match(/^#{1,3}\s+(.*)/))) { flush(); close(); html += '<h4>' + inline(m[1]) + '</h4>'; return; }
+      if ((m = l.match(/^[-*]\s+(.*)/))) { flush(); if (!list) { html += '<ul>'; list = true; } html += '<li>' + inline(m[1]) + '</li>'; return; }
+      close(); para.push(l);
+    });
+    flush(); close(); return html;
+  }
+
+  function icon(a, cls) {
+    var letter = esc((a.name || '?').trim().charAt(0).toUpperCase());
+    return '<span class="icon ' + (cls || '') + '" data-letter="' + letter + '">' + '<img src="' + esc(a.icon || 'apps/' + encodeURIComponent(a.id) + '/icon.png') + '" alt="" loading="lazy" decoding="async">' + '</span>';
+  }
+  function age(a) { return '<span class="age">' + esc(a.ageRating || 'Unrated') + '</span>'; }
+
+  /* Image fallback: raw.githubusercontent.com -> jsDelivr mirror -> letter. */
+  document.addEventListener('error', function (e) {
+    var img = e.target; if (!img || img.tagName !== 'IMG') return;
+    var m = !img.dataset.tried && img.src.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
+    if (m) { img.dataset.tried = '1'; img.src = 'https://cdn.jsdelivr.net/gh/' + m[1] + '/' + m[2] + '@' + m[3] + '/' + m[4]; return; }
+    var holder = img.closest('.icon'); if (holder) holder.textContent = holder.dataset.letter; else img.remove();
+  }, true);
+
+  function inPlatform(a) { return state.platform === 'all' || a.platforms.indexOf(state.platform) >= 0; }
+  function card(a) {
+    return '<a class="card" href="#' + encodeURIComponent(a.id) + '">' + icon(a) + '<span class="cname">' + esc(a.name) + '</span>' +
+      '<span class="cmeta">' + esc(a.category) + '</span>' + age(a) + '</a>';
+  }
+  function shelf(title, apps) {
+    if (!apps.length) return '';
+    return '<section class="shelf"><h2>' + esc(title) + '</h2><div class="car"><button type="button" class="nav prev" data-dir="-1" aria-label="Scroll left">‹</button>' +
+      '<div class="track">' + apps.map(card).join('') + '</div><button type="button" class="nav next" data-dir="1" aria-label="Scroll right">›</button></div></section>';
+  }
+
+  function renderHome() {
+    var all = state.apps.filter(inPlatform);
+    var cats = Array.from(new Set(all.map(function (a) { return a.category; }))).sort();
+    var q = state.q.trim().toLowerCase();
+    var html = '<div class="chips" role="group" aria-label="Categories"><button type="button" class="chip" data-cat="all" aria-pressed="' + (state.category === 'all') + '">All</button>' +
+      cats.map(function (c) { return '<button type="button" class="chip" data-cat="' + esc(c) + '" aria-pressed="' + (state.category === c) + '">' + esc(c) + '</button>'; }).join('') + '</div>';
+
+    if (q || state.category !== 'all') {
+      var res = all.filter(function (a) {
+        if (state.category !== 'all' && a.category !== state.category) return false;
+        return !q || [a.name, a.shortDescription, a.author, a.category].concat(a.tags || []).join(' ').toLowerCase().indexOf(q) >= 0;
+      }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+      html += res.length
+        ? '<h2 class="page-title">' + (q ? 'Results for “' + esc(state.q.trim()) + '”' : esc(state.category)) + '</h2><div class="grid">' + res.map(card).join('') + '</div>'
+        : '<div class="empty"><p>No apps match your search.</p><button type="button" class="btn" id="reset">Clear search</button></div>';
+    } else if (!all.length) {
+      html += '<div class="empty"><p>No apps available for this platform yet.</p></div>';
+    } else {
+      var recent = all.filter(function (a) { return a.updated; }).sort(function (a, b) { return b.updated.localeCompare(a.updated); }).slice(0, 12);
+      html += shelf('Recently updated', recent);
+      cats.forEach(function (c) { html += shelf(c, all.filter(function (a) { return a.category === c; }).sort(function (a, b) { return a.name.localeCompare(b.name); })); });
+    }
+    view.innerHTML = html;
+    var r = document.getElementById('reset');
+    if (r) r.onclick = function () { state.q = ''; state.category = 'all'; document.getElementById('q').value = ''; render(); };
+  }
+
+  function renderDetail(a) {
+    var dls = a.downloads.slice().sort(function (x, y) { return (y.platform === detected) - (x.platform === detected); });
+    var best = dls[0];
+    var similar = state.apps.filter(function (x) { return x.id !== a.id && x.category === a.category; }).slice(0, 6);
+    var dlHtml = dls.map(function (d) {
+      return '<li><div><strong>' + PLATFORM[d.platform] + ' ' + esc(d.version) + '</strong><div class="facts"><span>' + esc(d.type.toUpperCase()) + '</span>' +
+        (d.size ? '<span>' + fmtSize(d.size) + '</span>' : '') + (d.minOs ? '<span>Requires ' + esc(d.minOs) + '</span>' : '') + (d.date ? '<span>' + fmtDate(d.date) + '</span>' : '') + '</div>' +
+        '<div class="facts"><span class="hash" title="SHA-256">sha256 ' + esc(d.sha256.slice(0, 16)) + '…</span><button type="button" class="btn out" data-copy="' + esc(d.sha256) + '">Copy SHA-256</button></div></div>' +
+        '<a class="btn out" href="' + esc(safeUrl(d.url)) + '" rel="noopener noreferrer">Download</a></li>';
+    }).join('');
+    var shots = a.screenshots.length ? '<div class="shots" tabindex="0" aria-label="Screenshots">' + a.screenshots.map(function (s) { return '<img src="' + esc(s) + '" alt="Screenshot of ' + esc(a.name) + '" loading="lazy">'; }).join('') + '</div>' : '';
+    var info = [
+      ['Version', esc(best.version)], a.updated && ['Updated on', fmtDate(a.updated)], ['Available for', a.platforms.map(function (p) { return PLATFORM[p]; }).join(', ')],
+      best.minOs && ['Requires', esc(best.minOs)], a.license && ['License', esc(a.license)], a.author && ['Offered by', esc(a.author)],
+      a.github && ['Source code', '<a href="https://github.com/' + esc(a.github) + '" target="_blank" rel="noopener noreferrer">github.com/' + esc(a.github) + '</a>'],
+      a.github && ['Support', '<a href="https://github.com/' + esc(a.github) + '/issues/new" target="_blank" rel="noopener noreferrer">Report a problem</a>'],
+      a.website && ['Website', '<a href="' + esc(a.website) + '" target="_blank" rel="noopener noreferrer">' + esc(a.website.replace(/^https:\/\//, '')) + '</a>']
+    ].filter(Boolean).map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
+    var showLead = a.description && a.description.trim() !== a.shortDescription.trim();
+
+    view.innerHTML = '<article class="detail' + (similar.length ? ' has-aside' : '') + '"><div>' +
+      '<div class="head">' + icon(a, 'xl') + '<div><h1>' + esc(a.name) + '</h1>' + (a.author ? '<span class="dev">' + esc(a.author) + '</span>' : '') + '<div class="cat">' + esc(a.category) + '</div></div></div>' +
+      '<div class="stats"><div class="stat"><b>' + esc(a.ageRating || 'Unrated') + '</b><span>Age rating</span></div>' +
+      (best.size ? '<div class="stat"><b>' + fmtSize(best.size) + '</b><span>Download size</span></div>' : '') +
+      (a.totalDownloads != null ? '<div class="stat"><b>' + fmtCount(a.totalDownloads) + '</b><span>Downloads</span></div>' : '') +
+      '<div class="stat"><b>' + a.platforms.map(function (p) { return PLATFORM[p]; }).join(' · ') + '</b><span>Platforms</span></div></div>' +
+      '<div class="actions"><a class="btn" href="' + esc(safeUrl(best.url)) + '" rel="noopener noreferrer">Download</a><span class="muted">' + PLATFORM[best.platform] + ' ' + esc(best.version) + '</span></div>' +
+      shots +
+      '<section class="sec"><h2>About this app</h2><p class="lead">' + esc(a.shortDescription) + '</p>' + (showLead ? '<div class="prose">' + md(a.description) + '</div>' : '') + '</section>' +
+      '<section class="sec"><h2>Downloads</h2><ul class="dls">' + dlHtml + '</ul></section>' +
+      '<section class="sec"><h2>App info</h2><dl class="info">' + info + '</dl></section></div>' +
+      (similar.length ? '<aside class="aside"><h2>Similar apps</h2>' + similar.map(function (s) {
+        return '<a class="mini" href="#' + encodeURIComponent(s.id) + '">' + icon(s, 'sm') + '<span class="t"><span class="cname">' + esc(s.name) + '</span><span class="cmeta">' + esc(s.category) + '</span>' + age(s) + '</span></a>';
+      }).join('') + '</aside>' : '') + '</article>';
+    document.title = a.name + ' – ' + (state.title || 'repo-store');
+  }
+
+
+  /* ---- Publish an app: sends the submission to a private Discord webhook. ---- */
+  /* NOTE: this URL is visible to anyone who views the page source. Swap it for a proxy URL if you ever need to hide it. */
+  var WEBHOOK = 'https://discord.com/api/webhooks/1574420557037047828/75CnhpF95JG002Zx6BDih1ryQ9XUD3ZJ4KR4y9sarZZyrPZ-5QCZQGoqT3uPv_fhVd52';
+  var CATEGORIES = ['Games', 'Game Creation', 'Productivity', 'Tools', 'Social', 'Communication', 'Education', 'Entertainment', 'Music & Audio', 'Photo & Video', 'Finance', 'Health & Fitness', 'Weather', 'Developer Tools', 'Other'];
+  var AGES = ['Everyone', 'Everyone 10+', 'Teen 13+', 'Mature 17+', 'Adults Only 18+'];
+  var TYPES = { android: ['apk'], windows: ['msi', 'msix', 'exe', 'zip'] };
+  var sending = false;
+
+  function opts(list, sel) { return list.map(function (o) { return '<option' + (o === sel ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join(''); }
+  function fld(label, ctl, hint, req) { return '<label class="field"><span>' + label + (req ? ' <i>*</i>' : '') + '</span>' + ctl + (hint ? '<div class="hint">' + hint + '</div>' : '') + '</label>'; }
+  function inp(id, ph, type) { return '<input id="' + id + '" type="' + (type || 'text') + '" placeholder="' + esc(ph || '') + '" autocomplete="off">'; }
+  function dlRow() {
+    return '<div class="dlrow"><div class="top2"><span>Download</span><button type="button" class="btn out" data-rm>Remove</button></div><div class="two">' +
+      fld('Platform', '<select data-k="platform"><option value="android">Android</option><option value="windows">Windows</option></select>') +
+      fld('File type', '<select data-k="type">' + opts(TYPES.android) + '</select>') +
+      fld('Version', '<input data-k="version" placeholder="1.0.0">', '', true) + fld('Download URL (https)', '<input data-k="url" placeholder="https://github.com/…/app.apk">', '', true) +
+      fld('SHA-256', '<input data-k="sha256" placeholder="64 hex characters">', 'Optional. Leave blank if unknown.') + fld('Size', '<input data-k="size" placeholder="8 MB">') +
+      fld('Minimum OS', '<input data-k="minOs" placeholder="Android 8.0">') + fld('Silent install args', '<input data-k="silentArgs" placeholder="/qn (Windows only)">') + '</div></div>';
+  }
+  function renderPublish() {
+    document.title = 'Publish an app – ' + (state.title || 'repo-store');
+    view.innerHTML = '<form class="form" id="pub" novalidate><h1>Publish an app</h1><p class="muted">Fill in what you have. Fields marked * are required. Your submission is sent privately to the store owner for review.</p>' +
+      '<fieldset><legend>Basics</legend>' + fld('App name', inp('f-name', 'My App'), '', true) + fld('App ID', inp('f-id', 'my-app'), 'Folder name. Letters, digits, dot, dash, underscore. Auto-filled from the name.') +
+      fld('Short description', inp('f-short', 'One line shown on cards'), '', true) +
+      fld('Full description', '<textarea id="f-desc" placeholder="Features, what is new… Markdown is supported."></textarea>') +
+      '<div class="two">' + fld('Developer / author', inp('f-author', 'Your name or studio'), '', true) + fld('Category', '<select id="f-cat">' + opts(CATEGORIES) + '</select>') +
+      fld('Tags', inp('f-tags', 'notes, markdown, writing'), 'Comma separated.') + fld('Age rating', '<select id="f-age"><option value="">Not selected (Unrated)</option>' + opts(AGES) + '</select>', 'Defaults to Unrated.') + '</div></fieldset>' +
+      '<fieldset><legend>Images</legend>' + fld('App icon (upload)', '<input id="f-icon" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml">', 'Square PNG, 512×512 recommended. Max 2 MB.') +
+      fld('…or app icon URL', inp('f-iconurl', 'https://…/icon.png', 'url')) +
+      fld('Screenshots (upload, up to 4)', '<input id="f-shots" type="file" accept="image/png,image/jpeg,image/webp" multiple>', 'Max 5 MB each.') +
+      fld('…or screenshot URLs', '<textarea id="f-shoturls" style="min-height:70px" placeholder="One https URL per line"></textarea>') + '</fieldset>' +
+      '<fieldset><legend>Links and legal</legend><div class="two">' + fld('App website', inp('f-web', 'https://…', 'url')) + fld('Source code (GitHub owner/repo)', inp('f-gh', 'owner/repo'), 'If set, releases are synced automatically.') +
+      fld('License', inp('f-lic', 'MIT')) + fld('Privacy policy URL', inp('f-priv', 'https://…', 'url')) + fld('Support email or link', inp('f-sup', 'help@example.com')) + fld('Your contact (Discord or email)', inp('f-contact', '@name')) + '</div></fieldset>' +
+      '<fieldset><legend>Downloads</legend><div id="dls">' + dlRow() + '</div><p><button type="button" class="btn out" id="adddl">+ Add another download</button></p>' +
+      fld('What is new in this version', '<textarea id="f-new" style="min-height:70px"></textarea>') + '</fieldset>' +
+      '<input class="hp" id="f-hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+      '<div id="pmsg"></div><p><button class="btn" type="submit" id="pbtn">Submit app</button></p></form>';
+    var f = document.getElementById('pub'), idTouched = false;
+    document.getElementById('f-name').oninput = function () { if (!idTouched) document.getElementById('f-id').value = slug(this.value); };
+    document.getElementById('f-id').oninput = function () { idTouched = true; };
+    document.getElementById('adddl').onclick = function () { document.getElementById('dls').insertAdjacentHTML('beforeend', dlRow()); };
+    f.addEventListener('click', function (e) { if (e.target.closest('[data-rm]')) { var rows = f.querySelectorAll('.dlrow'); if (rows.length > 1) e.target.closest('.dlrow').remove(); } });
+    f.addEventListener('change', function (e) {
+      if (e.target.dataset.k !== 'platform') return;
+      var row = e.target.closest('.dlrow'), t = row.querySelector('[data-k=type]'); t.innerHTML = opts(TYPES[e.target.value]);
+      row.querySelector('[data-k=minOs]').placeholder = e.target.value === 'android' ? 'Android 8.0' : 'Windows 10';
+    });
+    f.addEventListener('submit', submitApp);
+  }
+
+  /* Minimal ZIP writer (stored, no compression) so a submission can be sent as one zip. */
+  var CRC = (function () { var t = [], c, n, k; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(b) { var c = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function makeZip(files) {
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0, now = new Date();
+    var time = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1), date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+    files.forEach(function (f) {
+      var name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      var h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint16(10, time, true); h.setUint16(12, date, true); h.setUint32(14, crc, true); h.setUint32(18, size, true); h.setUint32(22, size, true); h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+      var c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+      c.setUint16(12, time, true); c.setUint16(14, date, true); c.setUint32(16, crc, true); c.setUint32(20, size, true); c.setUint32(24, size, true); c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+      parts.push(h.buffer, name, f.data); central.push(c.buffer, name); offset += 30 + name.length + size;
+    });
+    var csize = central.reduce(function (n, p) { return n + (p.byteLength || p.length); }, 0);
+    var e = new DataView(new ArrayBuffer(22)); e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csize, true); e.setUint32(16, offset, true);
+    return new Blob(parts.concat(central, [e.buffer]), { type: 'application/zip' });
+  }
+  function bytes(file) { return file.arrayBuffer().then(function (b) { return new Uint8Array(b); }); }
+
+  function slug(n) { return String(n).toLowerCase().trim().replace(/[^a-z0-9._-]+/g, '-').replace(/^[-._]+|[-._]+$/g, ''); }
+  function v(id) { return document.getElementById(id).value.trim(); }
+  function cut(t, n) { t = String(t || ''); return t.length > n ? t.slice(0, n - 1) + '…' : t; }
+  function pmsg(t, err) { document.getElementById('pmsg').innerHTML = t ? '<div class="msg' + (err ? ' err' : '') + '">' + esc(t) + '</div>' : ''; }
+  function ext(file) { return (file.name.match(/\.([a-z0-9]+)$/i) || [, 'png'])[1].toLowerCase(); }
+
+  function submitApp(e) {
+    e.preventDefault();
+    if (sending || v('f-hp')) return;
+    var name = v('f-name'), id = slug(v('f-id') || name), short = v('f-short'), author = v('f-author'), github = v('f-gh');
+    var icon = document.getElementById('f-icon').files[0], iconUrl = v('f-iconurl'), shots = Array.from(document.getElementById('f-shots').files).slice(0, 4);
+    var shotUrls = v('f-shoturls').split(/\s+/).filter(Boolean).slice(0, 6);
+    var web = v('f-web'), priv = v('f-priv');
+    var err = !name ? 'Enter the app name.' : !/^[a-z0-9][a-z0-9._-]*$/i.test(id) ? 'The app ID is not valid.' : !short ? 'Enter a short description.' : !author ? 'Enter the developer name.' :
+      (github && !/^[\w.-]+\/[\w.-]+$/.test(github)) ? 'GitHub must look like owner/repo.' : (iconUrl && !/^https:\/\//i.test(iconUrl)) ? 'Icon URL must start with https://' :
+      (web && !/^https:\/\//i.test(web)) ? 'Website must start with https://' : (priv && !/^https:\/\//i.test(priv)) ? 'Privacy policy URL must start with https://' :
+      shotUrls.some(function (u) { return !/^https:\/\//i.test(u); }) ? 'Screenshot URLs must start with https://' :
+      (icon && icon.size > 2097152) ? 'The icon is over 2 MB.' : shots.some(function (s) { return s.size > 5242880; }) ? 'A screenshot is over 5 MB.' :
+      ((icon ? icon.size : 0) + shots.reduce(function (n, s) { return n + s.size; }, 0) > 8388608) ? 'Images total over 8 MB. Use fewer or smaller images, or image URLs.' : '';
+    var downloads = [];
+    document.querySelectorAll('.dlrow').forEach(function (row, i) {
+      if (err) return;
+      var d = {}; row.querySelectorAll('[data-k]').forEach(function (el) { d[el.dataset.k] = el.value.trim(); });
+      var empty = !d.version && !d.url && !d.sha256 && !d.size && !d.minOs && !d.silentArgs;
+      if (empty) return;
+      if (!d.version || !/^https:\/\//i.test(d.url)) { err = 'Download ' + (i + 1) + ': add a version and an https URL.'; return; }
+      if (d.sha256 && !/^[a-f0-9]{64}$/i.test(d.sha256)) { err = 'Download ' + (i + 1) + ': SHA-256 must be 64 hex characters.'; return; }
+      var o = { platform: d.platform, version: d.version, type: d.type, url: d.url, sha256: (d.sha256 || '0'.repeat(64)).toLowerCase() };
+      ['size', 'minOs', 'silentArgs'].forEach(function (k) { if (d[k]) o[k] = d[k]; });
+      downloads.push(o);
+    });
+    if (!err && !downloads.length && !github) err = 'Add at least one download, or a GitHub repo to sync releases from.';
+    if (err) { pmsg(err, true); return; }
+
+    var age = v('f-age') || 'Unrated', tags = v('f-tags').split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+    var iconName = icon ? 'icon.' + ext(icon) : null, shotNames = shots.map(function (s, i) { return 'screenshot-' + (i + 1) + '.' + ext(s); });
+    var meta = { name: name, shortDescription: short, author: author, category: v('f-cat'), tags: tags, ageRating: age };
+    if (web) meta.website = web; if (github) meta.github = github; if (v('f-lic')) meta.license = v('f-lic');
+    if (iconName) meta.icon = iconName; else if (iconUrl) meta.icon = iconUrl;
+    var allShots = shotNames.map(function (n) { return 'screenshots/' + n; }).concat(shotUrls); if (allShots.length) meta.screenshots = allShots;
+    if (downloads.length) meta.downloads = downloads;
+
+    var desc = v('f-desc'), news = v('f-new');
+    var md = (desc || short) + (news ? '\n\n## What\'s new\n' + news : '');
+    var fields = [
+      ['Developer', author], ['Category', v('f-cat')], ['Age rating', age], ['App ID', id], ['Tags', tags.join(', ')], ['License', v('f-lic')], ['GitHub', github],
+      ['Website', web], ['Privacy policy', priv], ['Support', v('f-sup')], ['Contact', v('f-contact')], ['What\'s new', news],
+      ['Downloads', downloads.map(function (d) { return '• ' + d.platform + ' ' + d.version + ' (' + d.type + ')' + (d.sha256 === '0'.repeat(64) ? ' – no hash' : '') + ' <' + d.url + '>'; }).join('\n')],
+      ['Full description', desc]
+    ].filter(function (x) { return x[1]; }).map(function (x) { return { name: x[0], value: cut(x[1], 1000), inline: ['Developer', 'Category', 'Age rating', 'App ID'].indexOf(x[0]) >= 0 }; });
+    var embed = { title: cut(name, 250), description: cut(short, 400), color: 0xd32f2f, fields: fields, footer: { text: 'Zip attached: unzip into apps/' }, timestamp: new Date().toISOString() };
+    if (iconUrl) embed.thumbnail = { url: iconUrl };
+    if (shotUrls[0]) embed.image = { url: shotUrls[0] };
+    if (/^https:\/\//i.test(web)) embed.url = web;
+
+    var enc = new TextEncoder(), folder = id + '/', entries = [
+      { name: folder + 'app.json', data: enc.encode(JSON.stringify(meta, null, 2) + '\n') },
+      { name: folder + 'description.md', data: enc.encode(md + '\n') }
+    ];
+    var reads = [];
+    if (icon) reads.push(bytes(icon).then(function (d) { entries.push({ name: folder + iconName, data: d }); }));
+    shots.forEach(function (s, i) { reads.push(bytes(s).then(function (d) { entries.push({ name: folder + 'screenshots/' + shotNames[i], data: d }); })); });
+    var payload = JSON.stringify({ username: 'repo-store', content: '**New app submission:** ' + cut(name, 100), allowed_mentions: { parse: [] }, embeds: [embed] });
+
+    sending = true; var btn = document.getElementById('pbtn'); btn.disabled = true; btn.textContent = 'Sending…'; pmsg('');
+    Promise.all(reads).then(function () {
+      var fd = new FormData(); fd.append('payload_json', payload); fd.append('files[0]', makeZip(entries), id + '.zip');
+      return fetch(WEBHOOK, { method: 'POST', body: fd });
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Discord replied ' + r.status);
+      view.innerHTML = '<div class="empty"><h2>Submitted</h2><p>' + esc(name) + ' was sent for review. Thank you!</p><a class="btn" href="#publish" id="again">Publish another app</a></div>';
+      document.getElementById('again').onclick = function (ev) { ev.preventDefault(); renderPublish(); };
+      window.scrollTo(0, 0);
+    }).catch(function (x) { pmsg('Could not send: ' + x.message + '. Try again in a moment.', true); }).then(function () { sending = false; btn.disabled = false; btn.textContent = 'Submit app'; });
+  }
+
+  function render() {
+    document.querySelectorAll('[data-platform]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.platform === state.platform)); });
+    if (currentId() === 'publish') { renderPublish(); return; }
+    var a = find(currentId());
+    if (a) renderDetail(a); else { document.title = state.title || 'repo-store'; renderHome(); }
+  }
+  function goHome() { if (location.hash) { history.pushState(null, '', location.pathname + location.search); window.scrollTo(0, 0); } render(); }
+
+  /* Events */
+  view.addEventListener('click', function (e) {
+    var chip = e.target.closest('[data-cat]');
+    if (chip) { state.category = chip.dataset.cat; render(); return; }
+    var nav = e.target.closest('.nav');
+    if (nav) { var t = nav.parentNode.querySelector('.track'); t.scrollBy({ left: nav.dataset.dir * t.clientWidth * 0.8, behavior: 'smooth' }); return; }
+    var c = e.target.closest('[data-copy]');
+    if (c && navigator.clipboard) navigator.clipboard.writeText(c.dataset.copy).then(function () { var o = c.textContent; c.textContent = 'Copied'; setTimeout(function () { c.textContent = o; }, 1400); });
+  });
+  document.querySelectorAll('[data-platform]').forEach(function (b) { b.addEventListener('click', function () { state.platform = b.dataset.platform; state.category = 'all'; goHome(); }); });
+  document.getElementById('q').addEventListener('input', function (e) { state.q = e.target.value; if (location.hash) goHome(); else render(); });
+  document.getElementById('home').addEventListener('click', function (e) { e.preventDefault(); state.q = ''; state.category = 'all'; document.getElementById('q').value = ''; goHome(); });
+  window.addEventListener('hashchange', function () { render(); window.scrollTo(0, 0); });
+
+  /* Load the catalog (no-cache = revalidate, so unchanged files cost a 304). */
+  fetch('apps.json', { cache: 'no-cache' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) {
+      state.apps = data.apps || []; state.title = data.name || 'repo-store';
+      document.getElementById('title').textContent = state.title;
+      render();
+    })
+    .catch(function (err) {
+      view.innerHTML = '<div class="empty"><p>Could not load apps.json (' + esc(err.message) + ').</p><p>Run <code>node build-list.js</code>, then open this folder through a web server, not as a file.</p></div>';
+    });
+})();
+</script>
+</body>
+</html>

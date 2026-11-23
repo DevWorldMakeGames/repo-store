@@ -1,0 +1,94 @@
+{
+  "name": "repo-store",
+  "generated": "2026-11-23T14:26:38.895Z",
+  "count": 2,
+  "apps": [
+    {
+      "id": "com.devworld.app",
+      "name": "Dev World - Make Games (beta)",
+      "shortDescription": "create games with your friends!",
+      "description": "create and play games straight from a web browser, phone, or pc.\n\n## FEATURES\n* create games\n* play games\n* share  your thoughts\n* UGC content\n\n## whats new: 0.4.0\n* added better comments system\n* added comments on games\n* added liking games\n* added game banners\n* fixed bugs",
+      "author": "DevWorldDevelopers",
+      "github": null,
+      "category": "Game Creation",
+      "tags": [
+        "creative",
+        "social",
+        "gaming"
+      ],
+      "website": "https://devworld.run.place",
+      "license": "MIT",
+      "ageRating": "Unrated",
+      "icon": "apps/com.devworld.app/icon.png",
+      "screenshots": [],
+      "platforms": [
+        "android"
+      ],
+      "updated": "2026-08-18",
+      "totalDownloads": null,
+      "downloads": [
+        {
+          "platform": "android",
+          "version": "0.1.4",
+          "type": "apk",
+          "url": "https://github.com/ThatOneDeveloperDevWorld/DevWorldWebRelease/releases/download/0.1.4/devworld0.1.4-ARMandroid.apk",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "size": "3MB",
+          "minOs": "Android 8.0",
+          "silentArgs": null,
+          "date": "2026-08-18",
+          "downloadCount": null
+        },
+        {
+          "platform": "android",
+          "version": "0.1.0",
+          "type": "apk",
+          "url": "https://github.com/DevWorldMakeGames/DevWorldAndroidReleases/releases/download/v0.1.0/devworld-0.1.0-debug.apk",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "size": "3MB",
+          "minOs": "Android 8.0",
+          "silentArgs": null,
+          "date": "2026-08-14",
+          "downloadCount": null
+        }
+      ]
+    },
+    {
+      "id": "com.devworld.pc",
+      "name": "dev world launcher",
+      "shortDescription": "launcher for dev world",
+      "description": "dev world, but for PC",
+      "author": "DevWorldDevelopers",
+      "github": "ThatOneDeveloperDevWorld/DevWorld-PC",
+      "category": "Game Creation",
+      "tags": [
+        "gaming",
+        "launcher"
+      ],
+      "website": "https://devworld.run.place",
+      "license": null,
+      "ageRating": "Teen 13+",
+      "icon": "apps/com.devworld.pc/icon.png",
+      "screenshots": [],
+      "platforms": [
+        "windows"
+      ],
+      "updated": null,
+      "totalDownloads": null,
+      "downloads": [
+        {
+          "platform": "windows",
+          "version": "0.1.0.0",
+          "type": "exe",
+          "url": "https://github.com/DevWorldMakeGames/devworldpcreleases/releases/download/v0.1.0.0/dev_world_launcher__windows.exe",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "size": "11MB",
+          "minOs": "Windows 10",
+          "silentArgs": null,
+          "date": null,
+          "downloadCount": null
+        }
+      ]
+    }
+  ]
+}
